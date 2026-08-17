@@ -6,7 +6,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -29,10 +29,11 @@ jobs:
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Publish APK release
+        uses: softprops/action-gh-release@v2
         with:
-          name: Hozurino-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
+          tag_name: debug-latest
+          name: حضورینو — نسخه آزمایشی
+          body: فایل APK آزمایشی حضورینو، ساخته‌شده به‌صورت خودکار با GitHub Actions.
+          prerelease: true
+          files: app/build/outputs/apk/debug/app-debug.apk
