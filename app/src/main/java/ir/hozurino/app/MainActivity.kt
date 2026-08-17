@@ -1,7 +1,6 @@
 package ir.hozurino.app
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -19,6 +18,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,7 +26,7 @@ private val Ink = Color(0xFF102A36)
 private val Teal = Color(0xFF10AD91)
 private val Cream = Color(0xFFF5F8F6)
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { HozurinoApp(onBiometric = ::authenticateBiometric) }
