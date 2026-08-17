@@ -38,7 +38,7 @@ class MainActivity:FragmentActivity(){
 }
 
 @Composable fun Hozurino(biometric:(((Boolean,String)->Unit)->Unit)){
- val store=remember{OfflineStore(LocalContext.current)};var page by remember{mutableStateOf("kiosk")};var employees by remember{mutableStateOf(store.employees())};var logs by remember{mutableStateOf(store.records())};var stats by remember{mutableStateOf(store.todayCount())};var notice by remember{mutableStateOf("")};var selected by remember{mutableStateOf<Employee?>(null)}
+ val context=LocalContext.current;val store=remember{OfflineStore(context)};var page by remember{mutableStateOf("kiosk")};var employees by remember{mutableStateOf(store.employees())};var logs by remember{mutableStateOf(store.records())};var stats by remember{mutableStateOf(store.todayCount())};var notice by remember{mutableStateOf("")};var selected by remember{mutableStateOf<Employee?>(null)}
  fun register(e:Employee,method:String){val r=store.add(e,method);notice=if(r==null)"ثبت تکراری؛ یک دقیقه صبر کنید" else "${r.type} ${e.name} با موفقیت ثبت شد";logs=store.records();stats=store.todayCount()}
  MaterialTheme(colorScheme=lightColorScheme(primary=Teal,background=Bg)){Surface(Modifier.fillMaxSize(),color=Bg){when(page){
   "adminLogin"->AdminLogin(store,{page="kiosk"},{page="admin"})

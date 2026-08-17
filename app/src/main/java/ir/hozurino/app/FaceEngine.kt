@@ -61,17 +61,3 @@ private fun descriptor(f:Face):String{
 }
 fun faceDistance(a:String,b:String):Double{val x=a.split(",").mapNotNull{it.toDoubleOrNull()};val y=b.split(",").mapNotNull{it.toDoubleOrNull()};if(x.size!=y.size||x.isEmpty())return 9.0;return x.zip(y).sumOf{abs(it.first-it.second)}/x.size}
 fun averageDescriptors(items:List<String>):String{val rows=items.map{it.split(",").map(String::toDouble)};return rows.first().indices.joinToString(","){i->"%.4f".format(Locale.US,rows.map{it[i]}.average())}}
-
-@Composable fun HistoryScreen(logs:List<AttendanceRecord>,back:()->Unit){
- Column(Modifier.fillMaxSize().padding(20.dp)){
-  Row(verticalAlignment=Alignment.CenterVertically){Header("سوابق آفلاین");Spacer(Modifier.weight(1f));androidx.compose.material3.TextButton(onClick=back){Text("بازگشت")}}
-  Spacer(Modifier.height(20.dp))
-  if(logs.isEmpty())Text("هنوز ترددی ثبت نشده",color=Color.Gray) else logs.forEach{r->
-   androidx.compose.material3.Card(Modifier.fillMaxWidth().padding(vertical=5.dp),colors=androidx.compose.material3.CardDefaults.cardColors(containerColor=Color.White)){
-    Row(Modifier.padding(16.dp)){Column(Modifier.weight(1f)){Text(r.employee,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold);Text(r.type+" · "+r.method,color=if(r.type=="ورود")Color(0xFF10AD91) else Color(0xFFE07A35))};Text(java.text.SimpleDateFormat("yyyy/MM/dd  HH:mm",Locale("fa")).format(java.util.Date(r.time)),color=Color.Gray)}
-   }
-  }
- }
-}
-@Composable fun StatCard(label:String,value:String,modifier:Modifier){androidx.compose.material3.Card(modifier){Column(Modifier.padding(12.dp)){Text(label,color=Color.Gray);Text(value,fontWeight=androidx.compose.ui.text.font.FontWeight.Black)}}}
-@Composable fun Header(title:String){Row(verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(44.dp).background(Color(0xFF102A36),RoundedCornerShape(14.dp)),contentAlignment=Alignment.Center){Text("✓",color=Color.White)};Spacer(Modifier.width(10.dp));Text(title,fontWeight=androidx.compose.ui.text.font.FontWeight.Black)}}
