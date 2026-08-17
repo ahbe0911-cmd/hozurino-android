@@ -34,5 +34,10 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.3.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.camera:camera-core:1.4.1")
+    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-view:1.4.1")
+    implementation("com.google.mlkit:face-detection:16.1.7")
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
 }
