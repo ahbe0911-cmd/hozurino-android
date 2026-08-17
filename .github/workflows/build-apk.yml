@@ -33,7 +33,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: debug-latest
-          name: حضورینو — نسخه آزمایشی
-          body: فایل APK آزمایشی حضورینو، ساخته‌شده به‌صورت خودکار با GitHub Actions.
+          name: حضورینو ۲ — نسخه آفلاین چندکاربره
+          body: نسخه آفلاین چندکاربره با ثبت چهره، PIN، اثر انگشت، پنل مدیریت و گزارش تردد.
           prerelease: true
           files: app/build/outputs/apk/debug/app-debug.apk
