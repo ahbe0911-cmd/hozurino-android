@@ -32,8 +32,9 @@ jobs:
       - name: Publish APK release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: debug-latest
-          name: حضورینو ۴ — کد پرسنلی و اثر انگشت
-          body: نسخه کاملاً آفلاین برای گوشی شخصی کارکنان؛ فعال‌سازی با کد پرسنلی، ثبت ورود و خروج با اثر انگشت امن گوشی و تاریخچه محلی.
+          tag_name: v4-fingerprint
+          name: حضورینو ۴ — نسخه اثر انگشت گوشی شخصی
+          body: نسخه جدید کاملاً آفلاین؛ بدون تشخیص چهره و دوربین، دارای فعال‌سازی با کد پرسنلی و ثبت ورود و خروج با اثر انگشت یا رمز شخصی.
           prerelease: true
+          overwrite_files: true
           files: app/build/outputs/apk/debug/app-debug.apk
