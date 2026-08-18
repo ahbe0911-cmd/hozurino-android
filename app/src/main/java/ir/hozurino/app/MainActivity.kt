@@ -45,7 +45,8 @@ class MainActivity:FragmentActivity(){
 }
 
 @Composable fun App(auth:((Boolean,String)->Unit)->Unit){
- val db=remember{OfflineStore(LocalContext.current)};var user by remember{mutableStateOf(db.profile())};var page by remember{mutableStateOf(if(user==null)"setup" else "home")};var records by remember{mutableStateOf(db.records())};var counts by remember{mutableStateOf(db.todayCount())};var msg by remember{mutableStateOf("")};var action by remember{mutableStateOf("ورود")}
+ val context=LocalContext.current
+ val db=remember(context){OfflineStore(context)};var user by remember{mutableStateOf(db.profile())};var page by remember{mutableStateOf(if(user==null)"setup" else "home")};var records by remember{mutableStateOf(db.records())};var counts by remember{mutableStateOf(db.todayCount())};var msg by remember{mutableStateOf("")};var action by remember{mutableStateOf("ورود")}
  fun save(type:String,method:String){val r=db.add(user!!,type);msg=if(r==null)"ثبت تکراری؛ یک دقیقه صبر کنید" else type+" با موفقیت ثبت شد";records=db.records();counts=db.todayCount()}
  MaterialTheme(colorScheme=darkColorScheme(primary=Teal,background=Bg,surface=Panel)){Surface(Modifier.fillMaxSize(),color=Bg){when(page){
   "setup"->Setup{n,c,p->db.saveProfile(n,c,p);user=db.profile();page="home"}
