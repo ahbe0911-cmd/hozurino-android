@@ -26,14 +26,6 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Bundle offline MobileFaceNet model
-        run: |
-          mkdir -p app/src/main/assets
-          curl -L --fail --retry 3 \
-            https://raw.githubusercontent.com/Eartherai/FaceAuthApp/29e9fc3efc6435996ee992428260e7d490428429/FaceAuthApp/android/app/src/main/assets/mobilefacenet_fp32.onnx \
-            -o app/src/main/assets/mobilefacenet_fp32.onnx
-          test "$(stat -c%s app/src/main/assets/mobilefacenet_fp32.onnx)" -eq 3997466
-
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
 
@@ -41,7 +33,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: debug-latest
-          name: حضورینو ۳ — نسخه مخصوص Galaxy A54
-          body: تشخیص چهره واقعی آفلاین با MobileFaceNet، ثبت چندکاربره، PIN، پنل مدیریت و گزارش تردد.
+          name: حضورینو ۴ — کد پرسنلی و اثر انگشت
+          body: نسخه کاملاً آفلاین برای گوشی شخصی کارکنان؛ فعال‌سازی با کد پرسنلی، ثبت ورود و خروج با اثر انگشت امن گوشی و تاریخچه محلی.
           prerelease: true
           files: app/build/outputs/apk/debug/app-debug.apk

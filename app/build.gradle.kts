@@ -11,8 +11,8 @@ android {
         applicationId = "ir.hozurino.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "3.1.0-a54-design3"
+        versionCode = 5
+        versionName = "4.0.0-fingerprint"
     }
     buildFeatures { compose = true }
     compileOptions {
@@ -34,11 +34,5 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.3.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-    implementation("androidx.camera:camera-core:1.4.1")
-    implementation("androidx.camera:camera-camera2:1.4.1")
-    implementation("androidx.camera:camera-lifecycle:1.4.1")
-    implementation("androidx.camera:camera-view:1.4.1")
-    implementation("com.google.mlkit:face-detection:16.1.7")
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
 }

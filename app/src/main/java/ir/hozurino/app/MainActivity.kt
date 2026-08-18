@@ -5,7 +5,6 @@ import androidx.activity.compose.setContent
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,66 +18,51 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlinx.coroutines.delay
 
-private val Ink=Color(0xFF07151D);private val Panel=Color(0xFF102A36);private val Panel2=Color(0xFF163844);private val Teal=Color(0xFF22D3AE);private val Bg=Color(0xFF061218);private val Orange=Color(0xFFFFA34D);private val Muted=Color(0xFF93A8B0)
+private val Bg=Color(0xFF06151C);private val Panel=Color(0xFF102A35);private val Teal=Color(0xFF20D5B0);private val Orange=Color(0xFFFFA24B);private val Muted=Color(0xFF92A8B1)
 
 class MainActivity:FragmentActivity(){
- override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{Hozurino(::biometric)}}
- private fun biometric(done:(Boolean,String)->Unit){
-  val allowed=BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
-  if(BiometricManager.from(this).canAuthenticate(allowed)!=BiometricManager.BIOMETRIC_SUCCESS){done(false,"اثر انگشت این دستگاه فعال نیست");return}
-  val p=BiometricPrompt(this,ContextCompat.getMainExecutor(this),object:BiometricPrompt.AuthenticationCallback(){override fun onAuthenticationSucceeded(r:BiometricPrompt.AuthenticationResult)=done(true,"هویت تأیید شد");override fun onAuthenticationError(c:Int,t:CharSequence)=done(false,t.toString())})
-  p.authenticate(BiometricPrompt.PromptInfo.Builder().setTitle("تأیید حضورینو").setSubtitle("اثر انگشت یا قفل امن دستگاه").setAllowedAuthenticators(allowed).build())
+ override fun onCreate(s:Bundle?){super.onCreate(s);setContent{App(::fingerprint)}}
+ private fun fingerprint(done:(Boolean,String)->Unit){
+  val strong=BiometricManager.Authenticators.BIOMETRIC_STRONG
+  if(BiometricManager.from(this).canAuthenticate(strong)!=BiometricManager.BIOMETRIC_SUCCESS){done(false,"ابتدا اثر انگشت را در تنظیمات گوشی فعال کنید");return}
+  val p=BiometricPrompt(this,ContextCompat.getMainExecutor(this),object:BiometricPrompt.AuthenticationCallback(){
+   override fun onAuthenticationSucceeded(r:BiometricPrompt.AuthenticationResult)=done(true,"تأیید شد")
+   override fun onAuthenticationError(c:Int,t:CharSequence)=done(false,t.toString())
+   override fun onAuthenticationFailed()=done(false,"اثر انگشت شناخته نشد")
+  })
+  p.authenticate(BiometricPrompt.PromptInfo.Builder().setTitle("تأیید حضورینو").setSubtitle("انگشت خود را روی حسگر گوشی قرار دهید").setNegativeButtonText("انصراف").setAllowedAuthenticators(strong).build())
  }
 }
 
-@Composable fun Hozurino(biometric:(((Boolean,String)->Unit)->Unit)){
- val context=LocalContext.current;val store=remember{OfflineStore(context)};var page by remember{mutableStateOf("kiosk")};var employees by remember{mutableStateOf(store.employees())};var logs by remember{mutableStateOf(store.records())};var stats by remember{mutableStateOf(store.todayCount())};var notice by remember{mutableStateOf("")};var selected by remember{mutableStateOf<Employee?>(null)}
- fun register(e:Employee,method:String){val r=store.add(e,method);notice=if(r==null)"ثبت تکراری؛ یک دقیقه صبر کنید" else "${r.type} ${e.name} با موفقیت ثبت شد";logs=store.records();stats=store.todayCount()}
- MaterialTheme(colorScheme=darkColorScheme(primary=Teal,background=Bg,surface=Panel,onSurface=Color.White)){Surface(Modifier.fillMaxSize(),color=Bg){when(page){
-  "adminLogin"->AdminLogin(store,{page="kiosk"},{page="admin"},biometric)
-  "admin"->AdminScreen(employees,store,{page="kiosk"},{page="enroll"},{id->store.deleteEmployee(id);employees=store.employees()})
-  "enroll"->EnrollmentScreen({page="admin"}){n,c,d->if(store.saveEmployee(Employee(name=n,code=c,descriptor=d))){employees=store.employees();page="admin";notice="کارمند اضافه شد"}else notice="کد پرسنلی تکراری است"}
-  "history"->HistoryScreen(logs){page="kiosk"}
-  else->KioskScreen(employees,stats,notice,{page="history"},{page="adminLogin"},{e,m->register(e,m)})
- }}}
-}
+@Composable fun App(auth:((Boolean,String)->Unit)->Unit){
+ val db=remember{OfflineStore(LocalContext.current)};var user by remember{mutableStateOf(db.profile())};var page by remember{mutableStateOf(if(user==null)"setup" else "home")};var records by remember{mutableStateOf(db.records())};var counts by remember{mutableStateOf(db.todayCount())};var msg by remember{mutableStateOf("")};var action by remember{mutableStateOf("ورود")}
+ fun save(type:String,method:String){val r=db.add(user!!,type);msg=if(r==null)"ثبت تکراری؛ یک دقیقه صبر کنید" else type+" با موفقیت ثبت شد";records=db.records();counts=db.todayCount()}
+ MaterialTheme(colorScheme=darkColorScheme(primary=Teal,background=Bg,surface=Panel)){Surface(Modifier.fillMaxSize(),color=Bg){when(page){
+  "setup"->Setup{n,c,p->db.saveProfile(n,c,p);user=db.profile();page="home"}
+  "logs"->Logs(records){page="home"}
+  "settings"->Settings(user!!,{page="home"}){db.reset();user=null;page="setup"}
+  "pin"->Pin(action,{page="home"}){if(db.verifyPin(user!!,it)){save(action,"رمز شخصی");page="home"}else msg="رمز شخصی نادرست است"}
+  else->Home(user!!,counts,msg,{page="logs"},{page="settings"},{type->action=type;auth{ok,text->if(ok)save(type,"اثر انگشت گوشی") else msg=text}},{type->action=type;page="pin"})
+ }}}}
 
-@Composable fun KioskScreen(employees:List<Employee>,stats:Pair<Int,Int>,notice:String,history:()->Unit,admin:()->Unit,register:(Employee,String)->Unit){
- var reading by remember{mutableStateOf(FaceReading())};var code by remember{mutableStateOf("")};var locked by remember{mutableStateOf(false)}
- var now by remember{mutableStateOf(Date())};LaunchedEffect(Unit){while(true){now=Date();delay(1000)}}
- LaunchedEffect(reading.descriptor){if(reading.live&&!locked&&employees.isNotEmpty()){val best=employees.minByOrNull{faceDistance(it.descriptor,reading.descriptor)};if(best!=null&&faceDistance(best.descriptor,reading.descriptor)<.42){locked=true;register(best,"MobileFaceNet")}}}
- Column(Modifier.fillMaxSize().background(Bg).padding(horizontal=16.dp)){
-  Row(Modifier.fillMaxWidth().padding(top=14.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically){Header("حضورینو");Spacer(Modifier.weight(1f));Column(horizontalAlignment=Alignment.End){Text(SimpleDateFormat("HH:mm",Locale("fa")).format(now),fontSize=30.sp,fontWeight=FontWeight.Black,color=Color.White);Text(SimpleDateFormat("yyyy/MM/dd",Locale("fa")).format(now),fontSize=11.sp,color=Muted)}}
-  Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Box(Modifier.background(Color(0x3322D3AE),RoundedCornerShape(20.dp)).padding(horizontal=10.dp,vertical=6.dp)){Text("● کاملاً آفلاین",color=Teal,fontSize=11.sp,fontWeight=FontWeight.Bold)};Spacer(Modifier.weight(1f));TextButton(onClick=history){Text("گزارش",color=Muted)};TextButton(onClick=admin){Text("مدیریت",color=Muted)}}
-  Row(Modifier.fillMaxWidth().padding(vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){StatCard("ورود امروز",stats.first.toString(),Modifier.weight(1f));StatCard("خروج امروز",stats.second.toString(),Modifier.weight(1f));StatCard("کارکنان",employees.size.toString(),Modifier.weight(1f))}
-  Box(Modifier.fillMaxWidth().weight(1f).padding(vertical=8.dp).border(2.dp,if(reading.live)Teal else Color(0xFF31515E),RoundedCornerShape(30.dp))){
-   CameraBox(Modifier.fillMaxSize()){reading=it}
-   Box(Modifier.align(Alignment.Center).fillMaxWidth(.72f).fillMaxHeight(.68f).border(2.dp,if(reading.live)Teal else Color.White.copy(alpha=.7f),RoundedCornerShape(38.dp)))
-   Box(Modifier.align(Alignment.TopCenter).padding(top=18.dp).background(Color(0xD907151D),RoundedCornerShape(22.dp)).padding(horizontal=18.dp,vertical=10.dp)){Text(if(employees.isEmpty())"ابتدا کارمند اضافه کنید" else reading.hint,color=if(reading.live)Teal else Color.White,fontSize=13.sp,fontWeight=FontWeight.Bold)}
-   Text("MobileFaceNet · A54",Modifier.align(Alignment.BottomCenter).padding(14.dp).background(Color(0xB307151D),RoundedCornerShape(14.dp)).padding(horizontal=12.dp,vertical=6.dp),color=Muted,fontSize=10.sp)
-  }
-  if(notice.isNotBlank())Box(Modifier.fillMaxWidth().padding(vertical=6.dp).background(Color(0x3322D3AE),RoundedCornerShape(16.dp)).padding(12.dp),contentAlignment=Alignment.Center){Text(notice,color=Teal,fontWeight=FontWeight.Bold)}
-  Row(Modifier.fillMaxWidth().padding(vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){OutlinedTextField(code,{code=it.filter(Char::isDigit).take(8)},label={Text("کد پرسنلی")},singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number),colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=Teal,unfocusedBorderColor=Color(0xFF31515E)),shape=RoundedCornerShape(18.dp),modifier=Modifier.weight(1f));Button(onClick={employees.find{it.code==code}?.let{register(it,"کد");code=""}},enabled=employees.any{it.code==code},shape=RoundedCornerShape(18.dp),modifier=Modifier.height(56.dp)){Text("ثبت با کد",fontWeight=FontWeight.Bold)}}
-  TextButton(onClick={locked=false},modifier=Modifier.fillMaxWidth().padding(bottom=8.dp)){Text("اسکن دوباره",color=Muted)}
- }
-}
+@Composable fun Setup(done:(String,String,String)->Unit){var n by remember{mutableStateOf("")};var c by remember{mutableStateOf("")};var p by remember{mutableStateOf("")};Column(Modifier.fillMaxSize().padding(24.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){Brand();Spacer(Modifier.height(28.dp));Text("فعال‌سازی گوشی شخصی",fontSize=23.sp,fontWeight=FontWeight.Black);Text("کاملاً آفلاین؛ اطلاعات فقط روی همین گوشی",color=Muted,fontSize=12.sp,modifier=Modifier.padding(8.dp));Input(n,{n=it},"نام و نام خانوادگی");Input(c,{c=it.filter(Char::isDigit).take(12)},"کد پرسنلی",true);OutlinedTextField(p,{p=it.filter(Char::isDigit).take(8)},label={Text("رمز شخصی ۴ تا ۸ رقم")},visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true,modifier=Modifier.fillMaxWidth().padding(vertical=7.dp));Button({done(n,c,p)},enabled=n.length>2&&c.length>=3&&p.length>=4,modifier=Modifier.fillMaxWidth().height(56.dp)){Text("فعال‌سازی حضورینو",fontWeight=FontWeight.Black)}}}
 
-@Composable fun EnrollmentScreen(back:()->Unit,done:(String,String,String)->Unit){var name by remember{mutableStateOf("")};var code by remember{mutableStateOf("")};var reading by remember{mutableStateOf(FaceReading())};val samples=remember{mutableStateListOf<String>()};Column(Modifier.fillMaxSize().padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally){Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Header("ثبت کارمند جدید");Spacer(Modifier.weight(1f));TextButton(onClick=back){Text("بازگشت")}};OutlinedTextField(name,{name=it},label={Text("نام و نام خانوادگی")},modifier=Modifier.fillMaxWidth());OutlinedTextField(code,{code=it.filter(Char::isDigit).take(8)},label={Text("کد پرسنلی یا PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number),modifier=Modifier.fillMaxWidth());Spacer(Modifier.height(10.dp));CameraBox(Modifier.fillMaxWidth().weight(1f)){reading=it};Text("نمونه ${samples.size} از ۳ — ${reading.hint}",color=if(reading.live)Teal else Color.Gray,modifier=Modifier.padding(8.dp));LinearProgressIndicator(progress={samples.size/3f},modifier=Modifier.fillMaxWidth());OutlinedButton({samples+=reading.descriptor},enabled=reading.live&&samples.size<3,modifier=Modifier.fillMaxWidth()){Text("گرفتن نمونه چهره")};Button({done(name,code,averageDescriptors(samples))},enabled=name.length>2&&code.length>=4&&samples.size==3,modifier=Modifier.fillMaxWidth()){Text("ذخیره کارمند در دستگاه")}}
-}
+@Composable fun Home(u:Employee,c:Pair<Int,Int>,msg:String,logs:()->Unit,settings:()->Unit,bio:(String)->Unit,pin:(String)->Unit){var now by remember{mutableStateOf(Date())};LaunchedEffect(Unit){while(true){now=Date();delay(1000)}};Column(Modifier.fillMaxSize().padding(18.dp)){Row(verticalAlignment=Alignment.CenterVertically){Brand();Spacer(Modifier.weight(1f));TextButton(settings){Text("تنظیمات",color=Muted)}};Card(Modifier.fillMaxWidth().padding(vertical=14.dp),shape=RoundedCornerShape(28.dp)){Column(Modifier.fillMaxWidth().padding(20.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(SimpleDateFormat("HH:mm",Locale("fa")).format(now),fontSize=54.sp,fontWeight=FontWeight.Black);Text(SimpleDateFormat("EEEE، yyyy/MM/dd",Locale("fa")).format(now),color=Muted);Text("● کاملاً آفلاین",color=Teal,fontSize=11.sp,modifier=Modifier.padding(top=10.dp))}};Text("سلام، "+u.name,fontSize=20.sp,fontWeight=FontWeight.Black);Text("کد پرسنلی: "+u.code,color=Muted,fontSize=12.sp);Row(Modifier.fillMaxWidth().padding(top=14.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)){Action("ثبت ورود",Teal,Modifier.weight(1f)){bio("ورود")};Action("ثبت خروج",Orange,Modifier.weight(1f)){bio("خروج")}};Row{TextButton({pin("ورود")},Modifier.weight(1f)){Text("ورود با رمز")};TextButton({pin("خروج")},Modifier.weight(1f)){Text("خروج با رمز")}};if(msg.isNotBlank())Text(msg,color=if(msg.contains("موفقیت"))Teal else Orange,textAlign=TextAlign.Center,fontWeight=FontWeight.Bold,modifier=Modifier.fillMaxWidth().background(Panel,RoundedCornerShape(15.dp)).padding(11.dp));Row(Modifier.fillMaxWidth().padding(top=12.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)){Stat("ورود امروز",c.first,Modifier.weight(1f));Stat("خروج امروز",c.second,Modifier.weight(1f))};Spacer(Modifier.weight(1f));OutlinedButton(logs,Modifier.fillMaxWidth()){Text("گزارش ترددها")};Text("اثر انگشت هرگز در برنامه ذخیره نمی‌شود",color=Muted,fontSize=10.sp,textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth().padding(10.dp))}
 
-@Composable fun AdminLogin(store:OfflineStore,back:()->Unit,ok:()->Unit,biometric:(((Boolean,String)->Unit)->Unit)){var pin by remember{mutableStateOf("")};var bad by remember{mutableStateOf(false)};Column(Modifier.fillMaxSize().padding(24.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){Header("ورود مدیر");Spacer(Modifier.height(24.dp));OutlinedTextField(pin,{pin=it.filter(Char::isDigit).take(8)},label={Text("رمز مدیر")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number));if(bad)Text("رمز نادرست است",color=MaterialTheme.colorScheme.error);Button({if(pin==store.adminPin())ok() else bad=true},Modifier.padding(8.dp)){Text("ورود با رمز")};OutlinedButton({biometric{success,_->if(success)ok()}},Modifier.padding(8.dp)){Text("اثر انگشت مدیر A54")};TextButton(onClick=back){Text("بازگشت به دستگاه")};Text("رمز اولیه: ۱۳۵۷",color=Color.Gray,fontSize=12.sp)}}
-
-@Composable fun AdminScreen(employees:List<Employee>,store:OfflineStore,back:()->Unit,add:()->Unit,delete:(Long)->Unit){var newPin by remember{mutableStateOf("")};Column(Modifier.fillMaxSize().padding(18.dp)){Row(verticalAlignment=Alignment.CenterVertically){Header("مدیریت دستگاه");Spacer(Modifier.weight(1f));TextButton(onClick=back){Text("خروج")}};Button(add,Modifier.fillMaxWidth().padding(vertical=12.dp)){Text("+ افزودن کارمند و ثبت چهره")};Text("کارکنان (${employees.size})",fontWeight=FontWeight.Black,fontSize=18.sp);LazyColumn(Modifier.weight(1f)){items(employees){e->Card(Modifier.fillMaxWidth().padding(vertical=5.dp)){Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(e.name,fontWeight=FontWeight.Bold);Text("کد: ${e.code}",color=Color.Gray)};TextButton(onClick={delete(e.id)}){Text("حذف",color=MaterialTheme.colorScheme.error)}}}}};Row(verticalAlignment=Alignment.CenterVertically){OutlinedTextField(newPin,{newPin=it.filter(Char::isDigit).take(8)},label={Text("رمز جدید مدیر")},modifier=Modifier.weight(1f));Button({store.setAdminPin(newPin);newPin=""},enabled=newPin.length>=4,modifier=Modifier.padding(start=8.dp)){Text("ذخیره")}}}
-}
-
-@Composable fun HistoryScreen(logs:List<AttendanceRecord>,back:()->Unit){Column(Modifier.fillMaxSize().padding(18.dp)){Row(verticalAlignment=Alignment.CenterVertically){Header("گزارش ترددها");Spacer(Modifier.weight(1f));TextButton(onClick=back){Text("بازگشت")}};if(logs.isEmpty())Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){Text("هنوز ترددی ثبت نشده",color=Color.Gray)}else LazyColumn{items(logs){r->Card(Modifier.fillMaxWidth().padding(vertical=4.dp)){Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(r.employee,fontWeight=FontWeight.Bold);Text("${r.type} · ${r.method}",color=if(r.type=="ورود")Teal else Orange)};Text(SimpleDateFormat("yyyy/MM/dd\nHH:mm",Locale("fa")).format(Date(r.time)),color=Color.Gray)}}}}}}
-@Composable fun StatCard(label:String,value:String,modifier:Modifier){Card(modifier,shape=RoundedCornerShape(18.dp),colors=CardDefaults.cardColors(containerColor=Panel)){Column(Modifier.padding(12.dp)){Text(label,color=Muted,fontSize=10.sp);Text(value,fontWeight=FontWeight.Black,fontSize=23.sp,color=Color.White)}}}
-@Composable fun Header(title:String){Row(verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(46.dp).background(Teal,RoundedCornerShape(15.dp)),contentAlignment=Alignment.Center){Text("⌾",color=Ink,fontWeight=FontWeight.Black,fontSize=25.sp)};Spacer(Modifier.width(10.dp));Column{Text(title,fontWeight=FontWeight.Black,fontSize=22.sp,color=Color.White);Text("سامانه حضور و غیاب",fontSize=9.sp,color=Muted)}}}
+@Composable fun Action(t:String,color:Color,m:Modifier,go:()->Unit){Button(go,m.height(130.dp),shape=RoundedCornerShape(25.dp),colors=ButtonDefaults.buttonColors(containerColor=color,contentColor=Bg)){Column(horizontalAlignment=Alignment.CenterHorizontally){Text("◎",fontSize=42.sp,fontWeight=FontWeight.Black);Text(t,fontSize=19.sp,fontWeight=FontWeight.Black);Text("اثر انگشت",fontSize=10.sp)}}}
+@Composable fun Stat(t:String,n:Int,m:Modifier){Card(m,shape=RoundedCornerShape(18.dp)){Column(Modifier.padding(15.dp)){Text(t,color=Muted,fontSize=11.sp);Text(n.toString(),fontSize=25.sp,fontWeight=FontWeight.Black)}}}
+@Composable fun Brand(){Row(verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(44.dp).background(Teal,RoundedCornerShape(14.dp)),contentAlignment=Alignment.Center){Text("✓",color=Bg,fontSize=25.sp,fontWeight=FontWeight.Black)};Spacer(Modifier.width(9.dp));Column{Text("حضورینو",fontSize=22.sp,fontWeight=FontWeight.Black);Text("حضور و غیاب هوشمند",fontSize=9.sp,color=Muted)}}}
+@Composable fun Input(v:String,set:(String)->Unit,label:String,num:Boolean=false){OutlinedTextField(v,set,label={Text(label)},singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=if(num)KeyboardType.Number else KeyboardType.Text),modifier=Modifier.fillMaxWidth().padding(vertical=7.dp))}
+@Composable fun Pin(type:String,back:()->Unit,done:(String)->Unit){var p by remember{mutableStateOf("")};Column(Modifier.fillMaxSize().padding(24.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){Brand();Spacer(Modifier.height(25.dp));Text("ثبت "+type+" با رمز",fontSize=22.sp,fontWeight=FontWeight.Black);OutlinedTextField(p,{p=it.filter(Char::isDigit).take(8)},label={Text("رمز شخصی")},visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),modifier=Modifier.fillMaxWidth().padding(vertical=15.dp));Button({done(p)},enabled=p.length>=4,modifier=Modifier.fillMaxWidth()){Text("تأیید و ثبت "+type)};TextButton(back){Text("انصراف")}}
+@Composable fun Settings(u:Employee,back:()->Unit,reset:()->Unit){Column(Modifier.fillMaxSize().padding(20.dp)){Row{Brand();Spacer(Modifier.weight(1f));TextButton(back){Text("بازگشت")}};Card(Modifier.fillMaxWidth().padding(vertical=20.dp)){Column(Modifier.padding(18.dp)){Text(u.name,fontSize=20.sp,fontWeight=FontWeight.Black);Text("کد پرسنلی: "+u.code,color=Muted)}};Text("احراز با اثر انگشت گوشی یا رمز شخصی",color=Muted);Spacer(Modifier.weight(1f));OutlinedButton(reset,Modifier.fillMaxWidth(),colors=ButtonDefaults.outlinedButtonColors(contentColor=MaterialTheme.colorScheme.error)){Text("حذف پروفایل و گزارش‌ها")}}
+@Composable fun Logs(rows:List<AttendanceRecord>,back:()->Unit){Column(Modifier.fillMaxSize().padding(18.dp)){Row{Text("گزارش ترددها",fontSize=22.sp,fontWeight=FontWeight.Black);Spacer(Modifier.weight(1f));TextButton(back){Text("بازگشت")}};if(rows.isEmpty())Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){Text("هنوز ترددی ثبت نشده",color=Muted)}else LazyColumn{items(rows){r->Card(Modifier.fillMaxWidth().padding(vertical=5.dp)){Row(Modifier.padding(15.dp)){Column(Modifier.weight(1f)){Text(r.type,fontWeight=FontWeight.Black,color=if(r.type=="ورود")Teal else Orange);Text(r.method,color=Muted,fontSize=11.sp)};Text(SimpleDateFormat("yyyy/MM/dd HH:mm",Locale("fa")).format(Date(r.time)),color=Muted)}}}}}}
