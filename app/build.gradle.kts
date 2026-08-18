@@ -11,8 +11,8 @@ android {
         applicationId = "ir.hozurino.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "2.0.0-offline"
+        versionCode = 3
+        versionName = "3.0.0-a54"
     }
     buildFeatures { compose = true }
     compileOptions {
@@ -39,5 +39,6 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.4.1")
     implementation("androidx.camera:camera-view:1.4.1")
     implementation("com.google.mlkit:face-detection:16.1.7")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
 }

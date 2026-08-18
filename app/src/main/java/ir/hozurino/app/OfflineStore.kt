@@ -9,7 +9,7 @@ import java.util.Calendar
 data class Employee(val id:Long=0,val name:String,val code:String,val descriptor:String,val active:Boolean=true)
 data class AttendanceRecord(val id:Long,val employeeId:Long,val employee:String,val method:String,val type:String,val time:Long)
 
-class OfflineStore(context:Context):SQLiteOpenHelper(context,"hozurino_offline.db",null,2){
+class OfflineStore(context:Context):SQLiteOpenHelper(context,"hozurino_offline.db",null,3){
  override fun onCreate(db:SQLiteDatabase){
   db.execSQL("CREATE TABLE employees(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,code TEXT NOT NULL UNIQUE,face TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1)")
   db.execSQL("CREATE TABLE attendance(id INTEGER PRIMARY KEY AUTOINCREMENT,employee_id INTEGER NOT NULL,employee TEXT NOT NULL,method TEXT NOT NULL,type TEXT NOT NULL,time INTEGER NOT NULL)")
@@ -24,6 +24,7 @@ class OfflineStore(context:Context):SQLiteOpenHelper(context,"hozurino_offline.d
    db.execSQL("INSERT INTO attendance(employee_id,employee,method,type,time) SELECT 1,employee,method,type,time FROM old_attendance")
    db.execSQL("DROP TABLE old_profile");db.execSQL("DROP TABLE old_attendance")
   }
+  if(oldVersion<3){db.execSQL("DELETE FROM employees")}
  }
  fun employees():List<Employee>{val out=mutableListOf<Employee>();readableDatabase.rawQuery("SELECT id,name,code,face,active FROM employees ORDER BY name",null).use{c->while(c.moveToNext())out+=Employee(c.getLong(0),c.getString(1),c.getString(2),c.getString(3),c.getInt(4)==1)};return out}
  fun saveEmployee(e:Employee):Boolean=try{writableDatabase.insertOrThrow("employees",null,ContentValues().apply{put("name",e.name.trim());put("code",e.code);put("face",e.descriptor);put("active",1)});true}catch(_:Exception){false}
