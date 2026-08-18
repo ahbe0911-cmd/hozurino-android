@@ -1,1 +1,2 @@
 Trigger latest installable APK artifact build.
+Synchronize build request.
