@@ -1,10 +1,10 @@
-name: Build Hozourino 2.7.0 Source
+name: Build Hozourino 2.7.1 Fix
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - rewrite-v2.7.0-src
+      - fix-v2.7.1
 
 permissions:
   contents: read
@@ -33,7 +33,7 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Rebuild source archive
+      - name: Rebuild verified 2.7.0 source
         run: |
           cat payload/minpart00.txt payload/minpart01.txt payload/minpart02.txt payload/minpart03.txt \
               payload/rest00.txt payload/rest01.txt payload/rest02.txt payload/rest03.txt \
@@ -44,6 +44,52 @@ jobs:
           mkdir project
           tar -xJf minimal.tar.xz -C project
 
+      - name: Apply 2.7.1 locale and typography patch
+        run: |
+          base64 -d fix271/code_patch.b64 > code_patch.tar.xz
+          echo "799de96fbe5a8025e3998522362ca19b980c11d3bfa18babc66c83c3cc08ec71  code_patch.tar.xz" | sha256sum -c -
+          rm -rf /tmp/hozpatch
+          mkdir -p /tmp/hozpatch
+          tar -xJf code_patch.tar.xz -C /tmp/hozpatch
+
+          cp /tmp/hozpatch/TimeUtils.kt project/app/src/main/java/com/hozourino/fingerprint/core/util/TimeUtils.kt
+          cp /tmp/hozpatch/TimeInput.kt project/app/src/main/java/com/hozourino/fingerprint/core/util/TimeInput.kt
+          cp /tmp/hozpatch/JalaliDateUtils.kt project/app/src/main/java/com/hozourino/fingerprint/core/util/JalaliDateUtils.kt
+          cp /tmp/hozpatch/HashUtils.kt project/app/src/main/java/com/hozourino/fingerprint/core/security/HashUtils.kt
+          cp /tmp/hozpatch/ManualAttendanceSaver.kt project/app/src/main/java/com/hozourino/fingerprint/domain/service/ManualAttendanceSaver.kt
+          cp /tmp/hozpatch/HTimePickerDialog.kt project/app/src/main/java/com/hozourino/fingerprint/presentation/components/HTimePickerDialog.kt
+          cp /tmp/hozpatch/ShiftEditViewModel.kt project/app/src/main/java/com/hozourino/fingerprint/presentation/shifts/ShiftEditViewModel.kt
+          cp /tmp/hozpatch/Type.kt project/app/src/main/java/com/hozourino/fingerprint/presentation/theme/Type.kt
+          cp /tmp/hozpatch/TimeInputTest.kt project/app/src/test/java/com/hozourino/fingerprint/core/util/TimeInputTest.kt
+          cp /tmp/hozpatch/TimeUtilsTest.kt project/app/src/test/java/com/hozourino/fingerprint/core/util/TimeUtilsTest.kt
+          cp /tmp/hozpatch/JalaliDateUtilsTest.kt project/app/src/test/java/com/hozourino/fingerprint/core/util/JalaliDateUtilsTest.kt
+          cp /tmp/hozpatch/app_build.gradle.kts project/app/build.gradle.kts
+
+      - name: Install Persian fonts
+        run: |
+          mkdir -p project/app/src/main/res/font
+          curl -L --fail --retry 3 \
+            https://raw.githubusercontent.com/rastikerdar/vazirmatn/v33.003/fonts/ttf/Vazirmatn-Regular.ttf \
+            -o project/app/src/main/res/font/vazirmatn_regular.ttf
+          curl -L --fail --retry 3 \
+            https://raw.githubusercontent.com/rastikerdar/vazirmatn/v33.003/fonts/ttf/Vazirmatn-Bold.ttf \
+            -o project/app/src/main/res/font/vazirmatn_bold.ttf
+          curl -L --fail --retry 3 \
+            https://raw.githubusercontent.com/fahimahmadi/ak_hospital_front/4d25d3712a000c61c5c5d7181d758cbfaa0272f0/src/assets/fonts/Far_TitrBd.ttf \
+            -o project/app/src/main/res/font/far_titr_bold.ttf
+          curl -L --fail --retry 3 \
+            https://raw.githubusercontent.com/mohammadhasananisi/personal_accountant/26f09ce3e414f5d6293f47296ab0dfd9af283d7e/assets/fonts/Far_Nazanin.ttf \
+            -o project/app/src/main/res/font/far_nazanin.ttf
+          test -s project/app/src/main/res/font/vazirmatn_regular.ttf
+          test -s project/app/src/main/res/font/vazirmatn_bold.ttf
+          test -s project/app/src/main/res/font/far_titr_bold.ttf
+          test -s project/app/src/main/res/font/far_nazanin.ttf
+          ls -lh project/app/src/main/res/font
+
+      - name: Run unit tests
+        working-directory: project
+        run: gradle :app:testDebugUnitTest --stacktrace
+
       - name: Build debug APK
         working-directory: project
         run: gradle :app:assembleDebug --stacktrace
@@ -51,7 +97,7 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: Hozourino-2.7.0-debug-apk
+          name: Hozourino-2.7.1-debug-apk
           path: project/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
