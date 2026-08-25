@@ -78,9 +78,9 @@ jobs:
 
       - name: Apply verified 2.7.3 preview UI patch
         run: |
-          cat fix273/part00.txt fix273/part01.txt fix273/part02.txt fix273/part03.txt \
+          cat fix273/part00.txt fix273/part01.txt \
             | base64 -d > ui_patch.tar.xz
-          echo "a0b27c01aba685f3a53abfff0e95109aab4fee43471e351927880e57570be283  ui_patch.tar.xz" | sha256sum -c -
+          echo "6cad6270821779f855a107d19086272536afc5d36793360577dc6cadc7f88c47  ui_patch.tar.xz" | sha256sum -c -
           rm -rf /tmp/hozpatch273
           mkdir -p /tmp/hozpatch273
           tar -xJf ui_patch.tar.xz -C /tmp/hozpatch273
