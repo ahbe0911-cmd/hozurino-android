@@ -85,7 +85,6 @@ jobs:
           test -s project/app/src/main/res/font/vazirmatn_bold.ttf
           test -s project/app/src/main/res/font/far_titr_bold.ttf
           test -s project/app/src/main/res/font/far_nazanin.ttf
-          ls -lh project/app/src/main/res/font
 
       - name: Run unit tests
         working-directory: project
@@ -95,6 +94,34 @@ jobs:
         working-directory: project
         run: gradle :app:assembleDebug --stacktrace
 
+      - name: Prepare unsigned release
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('project/app/build.gradle.kts')
+          s = p.read_text(encoding='utf-8')
+          old = '''            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                // در نبود کی‌استور، با کلید دیباگ امضا می‌شود تا بیلد متوقف نشود
+                signingConfigs.getByName("debug")
+            }'''
+          if old not in s:
+              raise SystemExit('release signing block not found')
+          p.write_text(s.replace(old, '            signingConfig = null'), encoding='utf-8')
+          PY
+
+      - name: Build unsigned release APK
+        working-directory: project
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Collect Android signing tools
+        run: |
+          mkdir -p signing-tools/lib
+          cp "$ANDROID_HOME/build-tools/34.0.0/lib/apksigner.jar" signing-tools/lib/apksigner.jar
+          cp "$ANDROID_HOME/build-tools/34.0.0/apksigner" signing-tools/apksigner
+          cp "$ANDROID_HOME/build-tools/34.0.0/zipalign" signing-tools/zipalign
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
@@ -102,3 +129,19 @@ jobs:
           path: project/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload unsigned release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hozourino-2.7.1-release-unsigned
+          path: project/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload signing tools
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-tools-signing-34
+          path: signing-tools
+          if-no-files-found: error
+          retention-days: 1
