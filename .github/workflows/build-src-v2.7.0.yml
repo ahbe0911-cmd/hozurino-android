@@ -1,10 +1,10 @@
-name: Build Hozourino 2.7.2 Report Fix
+name: Build Hozourino 2.7.3 Preview UI Redesign
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - fix-v2.7.2
+      - fix-v2.7.3
 
 permissions:
   contents: read
@@ -76,6 +76,17 @@ jobs:
           cp /tmp/hozpatch/ReportPrintPolicyTest.kt project/app/src/test/java/com/hozourino/fingerprint/presentation/reports/ReportPrintPolicyTest.kt
           cp /tmp/hozpatch/app_build.gradle.kts project/app/build.gradle.kts
 
+      - name: Apply verified 2.7.3 preview UI patch
+        run: |
+          cat fix273/part00.txt fix273/part01.txt fix273/part02.txt fix273/part03.txt \
+            | base64 -d > ui_patch.tar.xz
+          echo "a0b27c01aba685f3a53abfff0e95109aab4fee43471e351927880e57570be283  ui_patch.tar.xz" | sha256sum -c -
+          rm -rf /tmp/hozpatch273
+          mkdir -p /tmp/hozpatch273
+          tar -xJf ui_patch.tar.xz -C /tmp/hozpatch273
+          cp /tmp/hozpatch273/PdfPreviewScreen.kt project/app/src/main/java/com/hozourino/fingerprint/presentation/pdf/PdfPreviewScreen.kt
+          cp /tmp/hozpatch273/app_build.gradle.kts project/app/build.gradle.kts
+
       - name: Install Vazir and Nazanin fonts
         run: |
           mkdir -p project/app/src/main/res/font
@@ -105,7 +116,7 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: Hozourino-2.7.2-debug-apk
+          name: Hozourino-2.7.3-debug-apk
           path: project/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
@@ -144,7 +155,7 @@ jobs:
       - name: Upload unsigned release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Hozourino-2.7.2-release-unsigned
+          name: Hozourino-2.7.3-release-unsigned
           path: project/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 14
