@@ -60,6 +60,7 @@ jobs:
           cp /tmp/hozpatch/HTimePickerDialog.kt project/app/src/main/java/com/hozourino/fingerprint/presentation/components/HTimePickerDialog.kt
           cp /tmp/hozpatch/ShiftEditViewModel.kt project/app/src/main/java/com/hozourino/fingerprint/presentation/shifts/ShiftEditViewModel.kt
           cp /tmp/hozpatch/Type.kt project/app/src/main/java/com/hozourino/fingerprint/presentation/theme/Type.kt
+          mkdir -p project/app/src/test/java/com/hozourino/fingerprint/core/util
           cp /tmp/hozpatch/TimeInputTest.kt project/app/src/test/java/com/hozourino/fingerprint/core/util/TimeInputTest.kt
           cp /tmp/hozpatch/TimeUtilsTest.kt project/app/src/test/java/com/hozourino/fingerprint/core/util/TimeUtilsTest.kt
           cp /tmp/hozpatch/JalaliDateUtilsTest.kt project/app/src/test/java/com/hozourino/fingerprint/core/util/JalaliDateUtilsTest.kt
